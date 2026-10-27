@@ -2,34 +2,195 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ai-MI5 · 檔案總覽</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>翻牌配對</title>
 <style>
-  :root { color-scheme: light dark; }
-  body { font-family: system-ui, "Microsoft JhengHei", sans-serif; max-width: 720px;
-         margin: 3rem auto; padding: 0 1.25rem; line-height: 1.7; }
-  h1 { font-size: 1.5rem; }
-  ul { list-style: none; padding: 0; }
-  li { padding: .5rem 0; border-bottom: 1px solid rgba(128,128,128,.25); }
-  a { text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .empty { opacity: .6; }
+:root{--bg:#e9eef5;--surface:#fff;--ink:#1d2742;--mute:#5d6985;--back:#2b3a67;--back2:#3d4f8a;--ok:#1f9d7a;--hot:#e8743b;--line:#ccd5e4;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121830;--surface:#1b2444;--ink:#e8ecf8;--mute:#9aa6c7;--back:#4a5fae;--back2:#6378c4;--ok:#43c9a3;--hot:#f29a63;--line:#2e3a64;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121830;--surface:#1b2444;--ink:#e8ecf8;--mute:#9aa6c7;--back:#4a5fae;--back2:#6378c4;--ok:#43c9a3;--hot:#f29a63;--line:#2e3a64;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;line-height:1.5}
+main{max-width:920px;margin:0 auto;padding:20px 16px 40px;display:grid;gap:20px;grid-template-columns:1fr}
+@media(min-width:800px){main{grid-template-columns:minmax(0,1fr) 260px;align-items:start}header{grid-column:1/-1}}
+h1{font-size:2rem;margin:0;letter-spacing:.04em}
+.sub{color:var(--mute);margin:2px 0 0}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.seg{display:flex;border:2px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--ink);padding:8px 14px;font:inherit;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.stats{display:flex;gap:16px;font-variant-numeric:tabular-nums}
+.stats b{font-size:1.25rem}
+.btn{border:0;background:var(--hot);color:#1d1206;font:inherit;font-weight:700;padding:9px 18px;border-radius:12px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--mute);border:2px solid var(--line);font-weight:500}
+button:focus-visible{outline:3px solid var(--ok);outline-offset:2px}
+.grid{display:grid;gap:10px}
+.card{aspect-ratio:1;perspective:600px;border:0;background:none;padding:0;cursor:pointer}
+.in{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .35s}
+.card.f .in,.card.m .in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:14px;display:grid;place-items:center;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.back{background:repeating-linear-gradient(45deg,var(--back),var(--back) 8px,var(--back2) 8px,var(--back2) 16px);color:#fff;font-size:1.4rem}
+.front{background:var(--surface);border:3px solid var(--line);transform:rotateY(180deg);font-size:clamp(1.6rem,7vw,2.8rem)}
+.card.m .front{border-color:var(--ok)}
+.panel{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:16px}
+.panel h2{font-size:1.05rem;margin:0 0 8px}
+.panel+.panel{margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:.92rem;font-variant-numeric:tabular-nums}
+td,th{padding:4px 0;text-align:left;font-weight:400}th{color:var(--mute)}
+ul{list-style:none;margin:0;padding:0;font-size:.9rem;color:var(--mute)}
+li{padding:3px 0;border-bottom:1px solid var(--line)}
+.note{color:var(--mute);font-size:.85rem;margin:8px 0 0}
+dialog{border:0;border-radius:18px;background:var(--surface);color:var(--ink);padding:26px;text-align:center;max-width:320px}
+dialog::backdrop{background:rgba(10,14,30,.55)}
+dialog h2{margin:0 0 6px}
+.new{color:var(--ok);font-weight:700}
+@media(prefers-reduced-motion:reduce){.in{transition:none}}
 </style>
 </head>
 <body>
-<h1>Ai-MI5 · 檔案總覽</h1>
-<ul id="list">
-  <li class="empty">尚無檔案</li>
-</ul>
+<main>
+<header>
+<h1>翻牌配對</h1>
+<p class="sub">用最少步數找出所有相同的牌。進度與紀錄會自動存在這個瀏覽器裡。</p>
+</header>
+
+<section>
+<div class="bar">
+<div class="seg" id="seg" role="group" aria-label="難度">
+<button data-l="easy" aria-pressed="true">簡單</button>
+<button data-l="mid" aria-pressed="false">普通</button>
+<button data-l="hard" aria-pressed="false">困難</button>
+</div>
+<div class="stats"><span>步數 <b id="mv">0</b></span><span>時間 <b id="tm">0</b> 秒</span></div>
+<button class="btn" id="restart">重新開始</button>
+</div>
+<div class="grid" id="grid"></div>
+<p class="note" id="msg"></p>
+</section>
+
+<aside>
+<div class="panel">
+<h2>最佳紀錄</h2>
+<table><thead><tr><th>難度</th><th>步數</th><th>時間</th></tr></thead><tbody id="best"></tbody></table>
+</div>
+<div class="panel">
+<h2>最近 8 場</h2>
+<ul id="hist"></ul>
+<p class="note" id="empty">還沒有紀錄,完成一局就會出現。</p>
+<button class="btn ghost" id="clear" style="margin-top:10px">清除所有紀錄</button>
+</div>
+</aside>
+</main>
+
+<dialog id="dlg"><h2>完成!</h2><p id="dtxt"></p><button class="btn" id="again">再玩一局</button></dialog>
+
 <script>
-fetch('./files.json')
-  .then(r => r.ok ? r.json() : [])
-  .then(files => {
-    const ul = document.getElementById('list');
-    if (!files.length) return;
-    ul.innerHTML = files.map(f => `<li><a href="./${f}">${f}</a></li>`).join('');
-  })
-  .catch(() => {});
+var KEY="memgame:v1";
+var LV={easy:{n:6,c:4,t:"簡單"},mid:{n:8,c:4,t:"普通"},hard:{n:10,c:5,t:"困難"}};
+var EMO=["🍎","🍋","🍇","🍓","🥝","🍑","🍒","🍍","🥥","🍉","🍌","🫐"];
+var db={best:{},hist:[],save:null};
+var g=null,lock=false,timer=null;
+var $=function(i){return document.getElementById(i)};
+
+function load(){try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r);db.best=d.best||{};db.hist=d.hist||[];db.save=d.save||null}}catch(e){}}
+function store(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}}
+
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+
+function newGame(l){
+  var n=LV[l].n,arr=[];
+  EMO.slice(0,n).forEach(function(e){arr.push(e,e)});
+  g={l:l,cards:shuffle(arr).map(function(e){return{e:e,m:false}}),open:[],moves:0,secs:0,started:false};
+  db.save=null;store();render();
+}
+
+function render(){
+  var L=LV[g.l];
+  $("grid").style.gridTemplateColumns="repeat("+L.c+",1fr)";
+  $("grid").style.maxWidth=(L.c*110)+"px";
+  $("grid").innerHTML="";
+  g.cards.forEach(function(c,i){
+    var b=document.createElement("button");
+    b.className="card"+(c.m?" m":"")+(g.open.indexOf(i)>-1?" f":"");
+    b.setAttribute("aria-label","第 "+(i+1)+" 張牌");
+    b.innerHTML='<div class="in"><div class="face back">?</div><div class="face front">'+c.e+'</div></div>';
+    b.onclick=function(){flip(i)};
+    $("grid").appendChild(b);
+  });
+  $("mv").textContent=g.moves;$("tm").textContent=g.secs;
+  [].forEach.call($("seg").children,function(x){x.setAttribute("aria-pressed",x.dataset.l===g.l)});
+  if(g.started&&!done())startTimer();
+  renderRecords();
+}
+
+function startTimer(){
+  clearInterval(timer);
+  timer=setInterval(function(){g.secs++;$("tm").textContent=g.secs;persist()},1000);
+}
+function persist(){db.save=g;store()}
+function done(){return g.cards.every(function(c){return c.m})}
+
+function flip(i){
+  if(lock||g.cards[i].m||g.open.indexOf(i)>-1)return;
+  if(!g.started){g.started=true;startTimer()}
+  g.open.push(i);
+  el(i).classList.add("f");
+  if(g.open.length===2){
+    g.moves++;$("mv").textContent=g.moves;
+    var a=g.open[0],b=g.open[1];
+    if(g.cards[a].e===g.cards[b].e){
+      g.cards[a].m=g.cards[b].m=true;g.open=[];
+      el(a).classList.add("m");el(b).classList.add("m");
+      if(done())finish();else persist();
+    }else{
+      lock=true;
+      setTimeout(function(){
+        g.open=[];el(a).classList.remove("f");el(b).classList.remove("f");
+        lock=false;persist();
+      },800);
+    }
+  }else persist();
+}
+function el(i){return $("grid").children[i]}
+
+function finish(){
+  clearInterval(timer);
+  var l=g.l,b=db.best[l],rec=!b||g.moves<b.moves||(g.moves===b.moves&&g.secs<b.secs);
+  if(rec)db.best[l]={moves:g.moves,secs:g.secs};
+  db.hist.unshift({l:l,moves:g.moves,secs:g.secs,at:new Date().toLocaleDateString("zh-TW")});
+  db.hist=db.hist.slice(0,8);
+  db.save=null;store();renderRecords();
+  $("dtxt").innerHTML="「"+LV[l].t+"」用了 "+g.moves+" 步、"+g.secs+" 秒。"+(rec?'<br><span class="new">刷新最佳紀錄!</span>':"");
+  try{$("dlg").showModal()}catch(e){alert("完成!")}
+}
+
+function renderRecords(){
+  var h="";
+  Object.keys(LV).forEach(function(k){
+    var b=db.best[k];
+    h+="<tr><td>"+LV[k].t+"</td><td>"+(b?b.moves:"–")+"</td><td>"+(b?b.secs+" 秒":"–")+"</td></tr>";
+  });
+  $("best").innerHTML=h;
+  $("hist").innerHTML=db.hist.map(function(x){
+    return "<li>"+x.at+" "+LV[x.l].t+":"+x.moves+" 步 / "+x.secs+" 秒</li>";
+  }).join("");
+  $("empty").style.display=db.hist.length?"none":"block";
+}
+
+$("seg").onclick=function(e){var l=e.target.dataset&&e.target.dataset.l;if(l){clearInterval(timer);newGame(l)}};
+$("restart").onclick=function(){clearInterval(timer);newGame(g.l)};
+$("again").onclick=function(){$("dlg").close();newGame(g.l)};
+$("clear").onclick=function(){
+  if(!confirm("確定要清除所有最佳紀錄與歷史嗎?"))return;
+  db.best={};db.hist=[];store();renderRecords();
+};
+
+load();
+if(db.save&&db.save.cards&&LV[db.save.l]&&!db.save.cards.every(function(c){return c.m})){
+  g=db.save;g.open=[];render();
+  $("msg").textContent="已還原上次未完成的進度。";
+}else newGame("easy");
 </script>
 </body>
 </html>
